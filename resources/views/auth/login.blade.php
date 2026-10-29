@@ -1,0 +1,2 @@
+{{-- Halaman masuk RESQNET. Tampilan ada di auth/_card.blade.php --}}
+@include('auth._card', ['mode' => 'login'])
