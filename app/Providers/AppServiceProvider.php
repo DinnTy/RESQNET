@@ -19,15 +19,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        public function boot(): void
-   {
-       if (config('app.env') === 'production') {
-           \Illuminate\Support\Facades\URL::forceScheme('https');
-       }
+        // Di produksi (di belakang proxy HTTPS), paksa URL memakai https
+        if (config('app.env') === 'production') {
+            \Illuminate\Support\Facades\URL::forceScheme('https');
+        }
 
-       // Nama hari, bulan, dan "x menit yang lalu" ditampilkan dalam bahasa Indonesia
-       \Carbon\Carbon::setLocale('id');
-       ...
         // Nama hari, bulan, dan "x menit yang lalu" ditampilkan dalam bahasa Indonesia
         \Carbon\Carbon::setLocale('id');
 
