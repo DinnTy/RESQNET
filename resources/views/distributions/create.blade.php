@@ -1,4 +1,3 @@
-
 @extends('layouts.app')
 
 @section('title', 'Buat Distribusi Bantuan - RESQNET')
@@ -491,6 +490,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                 Jumlah (${escapeHtml(item.unit)})
                             </label>
                             <input type="number"
+                                   name="allocations[${item.aid_item_id}][${warehouseId}]"
                                    class="form-control allocation-quantity"
                                    data-item="${item.aid_item_id}"
                                    data-warehouse="${warehouseId}"
