@@ -33,4 +33,8 @@ return [
 'resend' => [
     'key' => env('RESEND_API_KEY'),
 ],
+    'google_apps_script' => [
+        'url' => env('GOOGLE_APPS_SCRIPT_URL'),
+        'secret' => env('GOOGLE_APPS_SCRIPT_SECRET'),
+    ],
 ];
