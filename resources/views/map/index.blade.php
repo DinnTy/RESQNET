@@ -11,75 +11,190 @@
       href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css">
 
 <style>
-    /* Tema Siaga — hanya tampilan; logika Leaflet, OSRM, dan rekomendasi gudang tidak diubah */
     .gis-header {
-        position: relative; overflow: hidden;
-        background: var(--ink); color: #fff;
+        position: relative;
+        overflow: hidden;
+        background: var(--ink);
+        color: #fff;
         padding: 26px 28px 26px 46px;
-        border-radius: 6px; box-shadow: 6px 6px 0 var(--or);
+        border-radius: 6px;
+        box-shadow: 6px 6px 0 var(--or);
         margin-bottom: 25px;
     }
-    .gis-header::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 12px; background: var(--hz); }
-    .gis-header h2 { color: #fff !important; text-transform: uppercase; font-stretch: 80%; }
-    .gis-header i { color: var(--or); }
 
-    .gis-stat { height: 100%; }
+    .gis-header::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 12px;
+        background: var(--hz);
+    }
+
+    .gis-header h2 {
+        color: #fff !important;
+        text-transform: uppercase;
+        font-stretch: 80%;
+    }
+
+    .gis-header i {
+        color: var(--or);
+    }
+
+    .gis-stat {
+        height: 100%;
+    }
 
     .gis-stat-icon {
-        width: 50px; height: 50px;
-        display: flex; align-items: center; justify-content: center;
-        border: 2px solid var(--ink); border-radius: 4px;
+        width: 50px;
+        height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid var(--ink);
+        border-radius: 4px;
         font-size: 22px;
     }
-    .gis-stat-icon.bg-danger-subtle { background: var(--rd) !important; color: #fff !important; }
-    .gis-stat-icon.bg-success-subtle { background: var(--ok-soft) !important; color: var(--ink) !important; }
 
-    .map-card { overflow: hidden; }
+    .gis-stat-icon.bg-danger-subtle {
+        background: var(--rd) !important;
+        color: #fff !important;
+    }
 
-    #resqnet-map { width: 100%; height: 560px; z-index: 1; }
+    .gis-stat-icon.bg-success-subtle {
+        background: var(--ok-soft) !important;
+        color: var(--ink) !important;
+    }
 
-    .map-legend { display: flex; flex-wrap: wrap; gap: 20px; align-items: center; font-weight: 600; }
+    .map-card {
+        overflow: hidden;
+    }
 
-    .legend-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 6px; border: 2px solid var(--ink); }
+    #resqnet-map {
+        width: 100%;
+        height: 560px;
+        z-index: 1;
+    }
+
+    .map-legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        align-items: center;
+        font-weight: 600;
+    }
+
+    .legend-dot {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        margin-right: 6px;
+        border: 2px solid var(--ink);
+    }
 
     .legend-line {
-        display: inline-block; width: 26px; height: 4px; margin-right: 6px; vertical-align: middle;
-        background: repeating-linear-gradient(90deg, var(--or) 0 7px, transparent 7px 11px);
+        display: inline-block;
+        width: 26px;
+        height: 4px;
+        margin-right: 6px;
+        vertical-align: middle;
+        background: #1677ff;
     }
 
     .recommendation-box {
-        background: #f1fbf5;
-        border: 2px solid var(--ink); border-left: 8px solid var(--ok);
-        border-radius: 4px; padding: 10px; margin-top: 9px;
+        background: #f1f7ff;
+        border: 2px solid var(--ink);
+        border-left: 8px solid #1677ff;
+        border-radius: 4px;
+        padding: 10px;
+        margin-top: 9px;
     }
 
-    .recommendation-item { border-bottom: 1px solid rgba(18,20,23,.2); padding: 9px 0; }
-    .recommendation-item:last-child { border-bottom: none; }
+    .recommendation-item {
+        border-bottom: 1px solid rgba(18,20,23,.2);
+        padding: 9px 0;
+    }
 
-    .show-route { width: 100%; }
+    .recommendation-item:last-child {
+        border-bottom: none;
+    }
 
-    .leaflet-popup-content { line-height: 1.6; margin: 12px; }
-    .leaflet-popup-content button { cursor: pointer !important; pointer-events: auto !important; }
+    .show-route {
+        width: 100%;
+    }
+
+    .leaflet-popup-content {
+        line-height: 1.6;
+        margin: 12px;
+    }
+
+    .leaflet-popup-content button {
+        cursor: pointer !important;
+        pointer-events: auto !important;
+    }
 
     .leaflet-routing-container {
-        max-height: 220px; overflow-y: auto; font-size: 12px;
-        border: 2px solid var(--ink) !important; border-radius: 4px; box-shadow: 4px 4px 0 var(--ink);
+        max-height: 220px;
+        overflow-y: auto;
+        font-size: 12px;
+        border: 2px solid var(--ink) !important;
+        border-radius: 4px;
+        box-shadow: 4px 4px 0 var(--ink);
     }
 
     .severity-label {
-        display: inline-block; padding: 3px 9px;
-        border: 2px solid var(--ink); border-radius: 3px;
-        font-size: 11px; font-weight: 700;
+        display: inline-block;
+        padding: 3px 9px;
+        border: 2px solid var(--ink);
+        border-radius: 3px;
+        font-size: 11px;
+        font-weight: 700;
     }
-    .severity-rendah { background: var(--ok-soft); color: var(--ink); }
-    .severity-sedang { background: var(--yl); color: var(--ink); }
-    .severity-tinggi { background: #ffd9c7; color: var(--ink); }
-    .severity-kritis { background: var(--rd); color: #fff; }
+
+    .severity-rendah {
+        background: var(--ok-soft);
+        color: var(--ink);
+    }
+
+    .severity-sedang {
+        background: var(--yl);
+        color: var(--ink);
+    }
+
+    .severity-tinggi {
+        background: #ffd9c7;
+        color: var(--ink);
+    }
+
+    .severity-kritis {
+        background: var(--rd);
+        color: #fff;
+    }
+
+    .stock-available {
+        color: #198754;
+        font-weight: 700;
+    }
+
+    .stock-empty {
+        color: #dc3545;
+        font-weight: 700;
+    }
 
     @media (max-width: 768px) {
-        #resqnet-map { height: 420px; }
-        .gis-header { padding: 20px 20px 20px 34px; }
-        .map-legend { gap: 12px; }
+        #resqnet-map {
+            height: 420px;
+        }
+
+        .gis-header {
+            padding: 20px 20px 20px 34px;
+        }
+
+        .map-legend {
+            gap: 12px;
+        }
     }
 </style>
 @endpush
@@ -94,6 +209,7 @@
             <div>
                 <i class="bi bi-geo-alt-fill" style="font-size:35px;"></i>
             </div>
+
             <div>
                 <h2 class="fw-bold mb-1">Peta Persebaran Bencana</h2>
                 <p class="mb-0 opacity-75">
@@ -112,6 +228,7 @@
                     <div class="gis-stat-icon bg-danger-subtle text-danger">
                         <i class="bi bi-exclamation-triangle-fill"></i>
                     </div>
+
                     <div>
                         <small class="text-muted">Laporan Terverifikasi</small>
                         <h3 class="fw-bold mb-0 text-danger">
@@ -128,6 +245,7 @@
                     <div class="gis-stat-icon bg-success-subtle text-success">
                         <i class="bi bi-house-check-fill"></i>
                     </div>
+
                     <div>
                         <small class="text-muted">Gudang Bantuan Aktif</small>
                         <h3 class="fw-bold mb-0 text-success">
@@ -144,6 +262,7 @@
     <div class="card map-card mb-3">
         <div class="card-body">
             <div class="map-legend">
+
                 <strong>Legenda Peta:</strong>
 
                 <span>
@@ -160,6 +279,7 @@
                     <span class="legend-line"></span>
                     Rute Distribusi
                 </span>
+
             </div>
         </div>
     </div>
@@ -174,7 +294,7 @@
             </h5>
 
             <small class="text-muted">
-                Klik marker untuk melihat detail bencana, kebutuhan bantuan, dan rekomendasi gudang.
+                Klik marker untuk melihat detail bencana, kebutuhan bantuan, dan rute menuju gudang.
             </small>
         </div>
 
@@ -366,15 +486,34 @@ document.addEventListener('DOMContentLoaded', function () {
 
                     recommendationHtml = `
                         <div class="recommendation-box">
-                            <strong style="color:#198754;">
-                                <i class="bi bi-house-check-fill"></i>
-                                Rekomendasi Gudang Terdekat
+
+                            <strong style="color:#1677ff;">
+                                <i class="bi bi-sign-turn-right-fill"></i>
+                                Gudang dan Rute Distribusi
                             </strong>
 
                             ${item.recommendations.map(function (warehouse, index) {
 
                                 const startLat = Number(warehouse.warehouse_latitude);
                                 const startLng = Number(warehouse.warehouse_longitude);
+
+                                const availableStock = Number(warehouse.available_stock ?? 0);
+                                const recommendedQuantity = Number(warehouse.recommended_quantity ?? 0);
+
+                                const hasStock = availableStock > 0;
+
+                                const stockLabel = hasStock
+                                    ? 'Stok tersedia'
+                                    : 'Stok kosong atau barang belum tersedia';
+
+                                const stockClass = hasStock
+                                    ? 'stock-available'
+                                    : 'stock-empty';
+
+                                const distanceLabel = warehouse.distance_km !== null
+                                    && warehouse.distance_km !== undefined
+                                    ? Number(warehouse.distance_km).toFixed(2) + ' km'
+                                    : 'Belum dapat dihitung';
 
                                 return `
                                     <div class="recommendation-item">
@@ -385,10 +524,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
                                         <br>
 
+                                        <small class="${stockClass}">
+                                            <i class="bi ${hasStock ? 'bi-check-circle-fill' : 'bi-exclamation-circle-fill'}"></i>
+                                            ${stockLabel}
+                                        </small>
+
+                                        <br>
+
                                         <small>
                                             Stok tersedia:
                                             <strong>
-                                                ${escapeHtml(warehouse.available_stock)}
+                                                ${availableStock}
+                                                ${escapeHtml(warehouse.unit)}
                                             </strong>
                                         </small>
 
@@ -397,7 +544,8 @@ document.addEventListener('DOMContentLoaded', function () {
                                         <small>
                                             Jumlah rekomendasi:
                                             <strong>
-                                                ${escapeHtml(warehouse.recommended_quantity)}
+                                                ${recommendedQuantity}
+                                                ${escapeHtml(warehouse.unit)}
                                             </strong>
                                         </small>
 
@@ -405,9 +553,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                                         <small>
                                             Jarak garis lurus:
-                                            <strong>
-                                                ${escapeHtml(warehouse.distance_km)} km
-                                            </strong>
+                                            <strong>${escapeHtml(distanceLabel)}</strong>
                                         </small>
 
                                         <br>
@@ -418,7 +564,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
                                         <button
                                             type="button"
-                                            class="btn btn-sm btn-success mt-2 show-route"
+                                            class="btn btn-sm btn-primary mt-2 show-route"
                                             data-start-lat="${startLat}"
                                             data-start-lng="${startLng}"
                                             data-end-lat="${latitude}"
@@ -441,9 +587,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 } else {
 
                     recommendationHtml = `
-                        <div class="text-danger mt-2">
+                        <div class="text-muted mt-2">
                             <small>
-                                Belum ditemukan gudang dengan stok yang sesuai.
+                                Belum tersedia gudang dengan koordinat valid untuk menampilkan rute.
                             </small>
                         </div>
                     `;
@@ -458,6 +604,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
                         Kebutuhan:
                         ${escapeHtml(item.quantity)}
+                        ${escapeHtml(item.unit)}
+
+                        <br>
+
+                        Sudah dialokasikan:
+                        ${escapeHtml(item.allocated_quantity ?? 0)}
+                        ${escapeHtml(item.unit)}
+
+                        <br>
+
+                        Sisa kebutuhan:
+                        ${escapeHtml(item.remaining_quantity ?? 0)}
                         ${escapeHtml(item.unit)}
 
                         <br>
@@ -708,11 +866,12 @@ document.addEventListener('DOMContentLoaded', function () {
             addWaypoints: false,
             draggableWaypoints: false,
             fitSelectedRoutes: true,
+            show: true,
 
             lineOptions: {
                 styles: [
                     {
-                        color: '#ff5a1f',
+                        color: '#1677ff',
                         opacity: 0.9,
                         weight: 6
                     }
@@ -730,6 +889,12 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
         }).addTo(map);
+
+        currentRoute.on('routingerror', function () {
+            alert(
+                'Rute tidak berhasil dihitung. Periksa koneksi internet atau coba kembali.'
+            );
+        });
 
         map.closePopup();
 

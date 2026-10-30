@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\DisasterReport;
 use App\Models\Warehouse;
-use Illuminate\Support\Collection;
 
 class MapController extends Controller
 {
@@ -14,7 +13,7 @@ class MapController extends Controller
             'category',
             'location',
             'aidRequests.items.aidItem',
-            'aidRequests.distributions.details',
+            'aidRequests.distributions.details.aidItem',
         ])
             ->where('status', 'terverifikasi')
             ->latest()
@@ -24,6 +23,7 @@ class MapController extends Controller
             ->where('is_active', true)
             ->get();
 
+        // Menyiapkan data gudang untuk peta.
         $warehouseData = $warehouses->map(function ($warehouse) {
             $stocks = $warehouse->stocks->map(function ($stock) {
                 $available = max(
@@ -36,7 +36,7 @@ class MapController extends Controller
                     'aid_item_id' => $stock->aid_item_id,
                     'item_name' => $stock->aidItem->name ?? '-',
                     'category' => $stock->aidItem->category ?? '-',
-                    'unit' => $stock->aidItem->unit ?? '-',
+                    'unit' => $stock->aidItem->unit ?? 'unit',
                     'quantity' => (int) $stock->quantity,
                     'reserved_quantity' => (int) $stock->reserved_quantity,
                     'available_quantity' => $available,
@@ -58,41 +58,41 @@ class MapController extends Controller
             ];
         });
 
+        // Menyiapkan laporan dan kebutuhan bantuan.
         $reportData = $reports->map(function ($report) use ($warehouseData) {
             $location = $report->location;
 
-            $requestData = $report->aidRequests->map(function ($request) use (
+            $requestData = $report->aidRequests->flatMap(function ($request) use (
                 $warehouseData,
                 $location
             ) {
-                /*
-                 * Gunakan data multi-item jika tersedia.
-                 * Jika belum ada, gunakan data legacy dari aid_requests.
-                 */
+                // Mendukung permintaan multi-barang dan data legacy.
                 $requestItems = $request->items->isNotEmpty()
                     ? $request->items
                     : collect([$request]);
 
-                $itemsData = $requestItems->map(function ($item) use (
+                return $requestItems->map(function ($item) use (
                     $request,
                     $warehouseData,
                     $location
                 ) {
                     $aidItemId = $item->aid_item_id ?? null;
+
                     $itemName = $item->aidItem->name
                         ?? $item->item_name
                         ?? '-';
 
                     $quantity = (int) ($item->quantity ?? 0);
-                    $unit = $item->unit ?? 'unit';
+
+                    $unit = $item->unit
+                        ?? $item->aidItem->unit
+                        ?? 'unit';
+
                     $priority = $item->priority
                         ?? $request->priority
                         ?? 'sedang';
 
-                    /*
-                     * Hitung jumlah barang yang sudah dialokasikan
-                     * melalui distribusi yang belum dibatalkan.
-                     */
+                    // Menghitung jumlah yang sudah dialokasikan.
                     $allocated = 0;
 
                     foreach ($request->distributions as $distribution) {
@@ -117,79 +117,91 @@ class MapController extends Controller
                     $remaining = max(0, $quantity - $allocated);
 
                     /*
-                     * Buat rekomendasi hanya jika masih ada kebutuhan.
+                     * Semua gudang aktif dengan koordinat valid
+                     * dapat digunakan untuk melihat rute.
+                     * Stok hanya menentukan status rekomendasi.
                      */
-                    $recommendations = collect();
-
-                    if ($remaining > 0) {
-                        $recommendations = $warehouseData
-                            ->filter(function ($warehouse) {
-                                return is_numeric($warehouse['latitude'])
-                                    && is_numeric($warehouse['longitude']);
-                            })
-                            ->map(function ($warehouse) use (
-                                $aidItemId,
-                                $itemName,
-                                $remaining,
-                                $location
-                            ) {
-                                $stock = collect($warehouse['stocks'])
-                                    ->first(function ($stock) use (
-                                        $aidItemId,
-                                        $itemName
-                                    ) {
-                                        if ($aidItemId) {
-                                            return (int) $stock['aid_item_id']
-                                                === (int) $aidItemId;
-                                        }
-
-                                        return strcasecmp(
-                                            $stock['item_name'],
-                                            $itemName
-                                        ) === 0;
-                                    });
-
-                                if (!$stock || $stock['available_quantity'] <= 0) {
-                                    return null;
-                                }
-
-                                $distance = null;
-
-                                if (
-                                    $location
-                                    && is_numeric($location->latitude)
-                                    && is_numeric($location->longitude)
+                    $recommendations = $warehouseData
+                        ->filter(function ($warehouse) {
+                            return is_numeric($warehouse['latitude'])
+                                && is_numeric($warehouse['longitude']);
+                        })
+                        ->map(function ($warehouse) use (
+                            $aidItemId,
+                            $itemName,
+                            $remaining,
+                            $location,
+                            $unit
+                        ) {
+                            $stock = collect($warehouse['stocks'])
+                                ->first(function ($stock) use (
+                                    $aidItemId,
+                                    $itemName
                                 ) {
-                                    $distance = $this->calculateDistance(
-                                        (float) $location->latitude,
-                                        (float) $location->longitude,
-                                        (float) $warehouse['latitude'],
-                                        (float) $warehouse['longitude']
-                                    );
-                                }
+                                    if ($aidItemId) {
+                                        return (int) $stock['aid_item_id']
+                                            === (int) $aidItemId;
+                                    }
 
-                                return [
-                                    'warehouse_id' => $warehouse['id'],
-                                    'warehouse_name' => $warehouse['name'],
-                                    'address' => $warehouse['address'],
-                                    'latitude' => $warehouse['latitude'],
-                                    'longitude' => $warehouse['longitude'],
-                                    'item_name' => $stock['item_name'],
-                                    'available_quantity' => $stock['available_quantity'],
-                                    'recommended_quantity' => min(
-                                        $stock['available_quantity'],
-                                        $remaining
-                                    ),
-                                    'unit' => $stock['unit'],
-                                    'distance' => $distance,
-                                ];
-                            })
-                            ->filter()
-                            ->sortBy(function ($recommendation) {
-                                return $recommendation['distance'] ?? PHP_FLOAT_MAX;
-                            })
-                            ->values();
-                    }
+                                    return strcasecmp(
+                                        $stock['item_name'],
+                                        $itemName
+                                    ) === 0;
+                                });
+
+                            $available = (int) (
+                                $stock['available_quantity'] ?? 0
+                            );
+
+                            $distance = null;
+
+                            if (
+                                $location
+                                && is_numeric($location->latitude)
+                                && is_numeric($location->longitude)
+                            ) {
+                                $distance = $this->calculateDistance(
+                                    (float) $location->latitude,
+                                    (float) $location->longitude,
+                                    (float) $warehouse['latitude'],
+                                    (float) $warehouse['longitude']
+                                );
+                            }
+
+                            return [
+                                'warehouse_id' => $warehouse['id'],
+                                'warehouse_name' => $warehouse['name'],
+                                'warehouse_address' => $warehouse['address'],
+
+                                'warehouse_latitude' => $warehouse['latitude'],
+                                'warehouse_longitude' => $warehouse['longitude'],
+
+                                'item_name' => $itemName,
+                                'available_stock' => $available,
+
+                                'recommended_quantity' => min(
+                                    $available,
+                                    $remaining
+                                ),
+
+                                'unit' => $stock['unit'] ?? $unit,
+
+                                'distance_km' => $distance !== null
+                                    ? round($distance, 2)
+                                    : null,
+
+                                // Status ketersediaan stok.
+                                'has_stock' => $available > 0,
+
+                                'can_fulfill' => $available >= $remaining
+                                    && $remaining > 0,
+                            ];
+                        })
+                        ->sortBy(function ($recommendation) {
+                            return $recommendation['distance_km']
+                                ?? PHP_FLOAT_MAX;
+                        })
+                        ->values();
 
                     return [
                         'aid_item_id' => $aidItemId,
@@ -203,25 +215,6 @@ class MapController extends Controller
                         'recommendations' => $recommendations->all(),
                     ];
                 });
-
-                /*
-                 * Pertahankan struktur data lama agar Blade
-                 * yang sekarang tetap dapat menampilkan daftar barang.
-                 */
-                $firstItem = $itemsData->first();
-
-                return [
-                    'id' => $request->id,
-                    'status' => $request->status,
-                    'items' => $itemsData->values()->all(),
-
-                    // Kompatibilitas dengan tampilan lama.
-                    'item_name' => $firstItem['item_name'] ?? '-',
-                    'quantity' => $firstItem['quantity'] ?? 0,
-                    'unit' => $firstItem['unit'] ?? 'unit',
-                    'priority' => $firstItem['priority'] ?? 'sedang',
-                    'recommendations' => $firstItem['recommendations'] ?? [],
-                ];
             });
 
             return [
@@ -241,20 +234,17 @@ class MapController extends Controller
         });
 
         return view('map.index', [
-    'reportData' => $reportData,
-    'warehouseData' => $warehouseData,
-    'reports' => $reports,
-    'warehouses' => $warehouses,
-
-    // Statistik GIS
-    'totalReports' => $reports->count(),
-    'totalWarehouses' => $warehouses->count(),
-]);
+            'reportData' => $reportData,
+            'warehouseData' => $warehouseData,
+            'reports' => $reports,
+            'warehouses' => $warehouses,
+            'totalReports' => $reports->count(),
+            'totalWarehouses' => $warehouses->count(),
+        ]);
     }
 
     /**
      * Menghitung jarak garis lurus menggunakan rumus Haversine.
-     * Hasil dalam kilometer.
      */
     private function calculateDistance(
         float $lat1,
