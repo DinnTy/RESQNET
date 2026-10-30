@@ -1,24 +1,28 @@
 #!/bin/sh
-# Skrip start RESQNET: siapkan Laravel lalu jalankan Apache.
 set -e
+
 cd /var/www/html
 
-php artisan package:discover --ansi || true
+# Sesuaikan port Apache dengan PORT dari Render
+PORT="${PORT:-10000}"
+sed -i "s/Listen 80/Listen ${PORT}/g" /etc/apache2/ports.conf
+sed -i "s/<VirtualHost \*:80>/<VirtualHost *:${PORT}>/g" /etc/apache2/sites-available/000-default.conf
+
+php artisan package:discover --ansi
 php artisan storage:link 2>/dev/null || true
 
-# Cache konfigurasi untuk produksi (APP_KEY dan DB_* dibaca dari environment variable)
 php artisan config:cache
-php artisan route:cache || true
-php artisan view:cache || true
+php artisan route:cache
+php artisan view:cache
 
-# Jalankan migrasi hanya bila diminta (RUN_MIGRATIONS=true). Aman diulang.
 if [ "$RUN_MIGRATIONS" = "true" ]; then
-  php artisan migrate --force
+    php artisan migrate --force
 fi
-# Isi data demo hanya bila diminta (RUN_DEMO_SEED=true).
+
 if [ "$RUN_DEMO_SEED" = "true" ]; then
-  php artisan db:seed --class=DemoDataSeeder --force || echo "Seeder dilewati/gagal"
+    php artisan db:seed --class=DemoDataSeeder --force || echo "Seeder dilewati/gagal"
 fi
 
 chown -R www-data:www-data storage bootstrap/cache
+
 exec apache2-foreground
